@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Bản đồ Trường Học Quảng Trị</title>
+<link rel="stylesheet"
+	href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+<link rel="stylesheet"
+	href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+
+<style>
+body {
+	margin: 0;
+	padding: 0;
+	font-family: Arial, sans-serif;
+	display: flex;
+	flex-direction: row;
+}
+
+.sidebar {
+	width: 350px;
+	background: #f8f9fa;
+	border-right: 1px solid #dee2e6;
+	height: 100vh;
+	overflow-y: auto;
+	box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-header {
+	padding: 15px;
+	background: #2c3e50;
+	color: white;
+	text-align: center;
+	font-weight: bold;
+}
+
+.search-filter {
+	padding: 15px;
+	border-bottom: 1px solid #dee2e6;
+}
+
+.search-box {
+	margin-bottom: 15px;
+}
+
+.search-box input {
+	width: 80%;
+	padding: 8px 12px;
+	border: 1px solid #ced4da;
+	border-radius: 4px;
+}
+
+.filter-box select {
+	width: 88%;
+	padding: 8px 12px;
+	border: 1px solid #ced4da;
+	border-radius: 4px;
+}
+
+.location-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.location-item {
+	padding: 12px 15px;
+	border-bottom: 1px solid #e9ecef;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+.location-item:hover {
+	background-color: #e9ecef;
+}
+
+.location-name {
+	font-weight: bold;
+	margin-bottom: 5px;
+}
+
+.location-address {
+	font-size: 0.9em;
+	color: #6c757d;
+}
+
+.location-category {
+	display: inline-block;
+	padding: 2px 8px;
+	font-size: 0.8em;
+	background: #2c3e50;
+	color: white;
+	border-radius: 10px;
+	margin-top: 5px;
+}
+
+#map-container {
+	flex: 1;
+	height: 100vh;
+	position: relative;
+}
+
+#map {
+	height: 100%;
+	width: 100%;
+}
+
+.popup-content {
+	max-width: 300px;
+}
+
+.popup-image {
+	width: 100%;
+	height: auto;
+	margin-bottom: 10px;
+	border-radius: 4px;
+}
+
+.popup-info {
+	margin-bottom: 5px;
+}
+
+.popup-category {
+	display: inline-block;
+	padding: 3px 8px;
+	background: #2c3e50;
+	color: white;
+	border-radius: 12px;
+	font-size: 12px;
+	margin-bottom: 8px;
+}
+</style>
+</head>
+<body>
+
+
+	<div class="sidebar">
+		<div class="sidebar-header">WebGis trường học Quảng Trị</div>
+
+		<div class="search-filter">
+			<div class="search-box">
+				<input type="text" id="search-input"
+					placeholder="Nhập tên địa điểm...">
+			</div>
+
+			<div class="filter-box">
+				<select id="category-filter">
+					<option value="">Tất cả loại địa điểm</option>
+					<option value="Mầm non">Mầm non</option>
+					<option value="Tiểu học">Tiểu học</option>
+					<option value="THCS">THCS</option>
+					<option value="THPT">THPT</option>
+					<option value="Cao đẳng">Cao đẳng</option>
+					<option value="Đại học">Đại học</option>
+				</select>
+			</div>
+		</div>
+
+		<ul class="location-list" id="location-list">
+
+		</ul>
+	</div>
+
+
+	<div id="map-container">
+		<div id="map"></div>
+	</div>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+	<script
+		src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+	<script th:inline="javascript">
+        var defaultLat = 16.8167;
+        var defaultLng = 107.1000;
+
+        var map = L.map('map').setView([defaultLat, defaultLng], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var markers = [];
+        var locationList = [];
+        var locations = /*[[${locations}]]*/ [];
+
+        
+        /// Dle
+        function displayLocations(locs) {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+
+            document.getElementById('location-list').innerHTML = '';
+
+            const validLocations = locs.filter(loc => loc.latitude && loc.longitude);
+            locationList = validLocations;
+
+            validLocations.forEach(function(loc) {
+                var popupContent = `
+                    <div class="popup-content">
+                        ${loc.imageUrl ? `<img src="${loc.imageUrl}" class="popup-image" alt="Hình ảnh">` : ''}
+                        ${loc.category ? `<span class="popup-category">${loc.category}</span>` : ''}
+                        <h3>${loc.name || 'Không có tên'}</h3>
+                        <div class="popup-info"><strong>Địa chỉ:</strong> ${loc.address || 'Đang cập nhật'}</div>
+                        ${loc.openingHours ? `<div class="popup-info"><strong>Giờ mở cửa:</strong> ${loc.openingHours}</div>` : ''}
+                        <button onclick="routeWithLeafletRouting(${loc.latitude}, ${loc.longitude})">Tìm đường đến đây</button>
+
+                    </div>
+                `;
+               
+                var marker = L.marker([loc.latitude, loc.longitude])
+                    .addTo(map)
+                    .bindPopup(popupContent);
+
+                markers.push(marker);
+                
+                //nav-list
+                var li = document.createElement('li');
+                li.className = 'location-item';
+                li.innerHTML = `
+                    <div class="location-name">${loc.name || 'Không có tên'}</div>
+                    <div class="location-address">${loc.address || 'Đang cập nhật địa chỉ'}</div>
+                    ${loc.category ? `<span class="location-category">${loc.category}</span>` : ''}
+                `;
+                //click
+                li.addEventListener('click', function() {
+                    map.setView([loc.latitude, loc.longitude], 15);
+                    marker.openPopup();
+                });
+
+                document.getElementById('location-list').appendChild(li);
+            });
+        }
+        //nav
+        function filterLocations() {
+            const searchText = document.getElementById('search-input').value.toLowerCase();
+            const categoryFilter = document.getElementById('category-filter').value;
+
+            const filtered = locations.filter(loc => {
+                const nameMatch = loc.name?.toLowerCase().includes(searchText) || false;
+                const categoryMatch = categoryFilter === '' || loc.category === categoryFilter;
+                return nameMatch && categoryMatch;
+            });
+            //Update
+            displayLocations(filtered);
+        }
+
+        document.getElementById('search-input').addEventListener('input', filterLocations);
+        document.getElementById('category-filter').addEventListener('change', filterLocations);
+
+        if (locations && Array.isArray(locations)) {
+            displayLocations(locations);
+        }
+        //vi tri
+        function locateUser() {
+    if (!navigator.geolocation) {
+        alert('Trình duyệt của bạn không hỗ trợ định vị vị trí.');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+
+        const userMarker = L.marker([userLat, userLng], {
+            icon: L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/61/61168.png',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30],
+                popupAnchor: [0, -30]
+            })
+        }).addTo(map).bindPopup("Vị trí của bạn").openPopup();
+
+        map.setView([userLat, userLng], 14);
+    }, function() {
+        alert('Không thể lấy vị trí của bạn.');
+    });
+}      //tim duong
+let routingControl;
+
+function routeWithLeafletRouting(destLat, destLng) {
+    if (!navigator.geolocation) {
+        alert('Trình duyệt không hỗ trợ định vị.');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+
+        if (routingControl) {
+            map.removeControl(routingControl);
+        }
+
+        routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(userLat, userLng),
+                L.latLng(destLat, destLng)
+            ],
+            routeWhileDragging: false,
+            show: true,
+         
+            createMarker: function(i, wp, nWps) {
+                return L.marker(wp.latLng, {
+                    draggable: false
+                });
+            }
+        }).addTo(map);
+    }, function() {
+        alert('Không thể lấy vị trí người dùng.');
+    });
+}
+
+
+
+
+
+// Gọi hàm này khi người dùng bấm nút
+
+    </script>
+	
+
+</body>
+</html>

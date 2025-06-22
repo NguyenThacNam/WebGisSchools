@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="layout/admin">
+<head>
+<meta charset="UTF-8">
+<title>Chỉnh sửa địa điểm</title>
+<style>
+.image-preview {
+	max-width: 200px;
+	max-height: 200px;
+	margin-top: 10px;
+}
+
+.alert {
+	padding: 15px;
+	margin-bottom: 20px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+}
+
+.alert-success {
+	color: #3c763d;
+	background-color: #dff0d8;
+	border-color: #d6e9c6;
+}
+
+.alert-danger {
+	color: #a94442;
+	background-color: #f2dede;
+	border-color: #ebccd1;
+}
+</style>
+</head>
+<body>
+	<div layout:fragment="main">
+		
+		<h1>Form</h1>
+		<h2>Chỉnh sửa địa điểm</h2>
+
+		<form th:action="@{/admin/location/update}" th:object="${location}"
+			method="post" enctype="multipart/form-data">
+
+			<input type="hidden" th:field="*{id}" />
+
+			<div class="mb-3">
+				<label class="form-label">Tên địa điểm</label> <input type="text"
+					class="form-control" th:field="*{name}" required>
+			</div>
+
+			<div class="mb-3">
+				<label class="form-label">Loại địa điểm</label> <input type="text"
+					class="form-control" th:field="*{category}" required>
+			</div>
+
+			<div class="mb-3">
+				<label class="form-label">Địa chỉ</label> <input type="text"
+					class="form-control" th:field="*{address}" required>
+			</div>
+
+			<div class="mb-3">
+				<label class="form-label">Vĩ độ (Latitude)</label> <input
+					type="number" step="any" class="form-control"
+					th:field="*{latitude}" required>
+			</div>
+
+			<div class="mb-3">
+				<label class="form-label">Kinh độ (Longitude)</label> <input
+					type="number" step="any" class="form-control"
+					th:field="*{longitude}" required>
+			</div>
+
+			<div class="mb-3">
+				<label class="form-label">Giờ mở cửa</label> <input type="text"
+					class="form-control" th:field="*{openingHours}">
+			</div>
+
+			<div class="mb-3">
+				<label class="form-label">Ảnh địa điểm</label> <input type="file"
+					class="form-control" name="imageFile" id="imageFile"
+					accept="image/*" onchange="previewImage()"> <small
+					class="text-muted">Chỉ chấp nhận file ảnh (JPEG, PNG, GIF)</small>
+
+			</div>
+
+			<div class="mb-3" th:if="${error != null}">
+				<div class="alert alert-danger" th:text="${error}"></div>
+			</div>
+
+			<button type="submit" class="btn btn-primary">Cập nhật</button>
+			<a th:href="@{/admin/location}" class="btn btn-secondary">Hủy</a>
+		</form>
+	</div>
+
+
+</body>
+</html>

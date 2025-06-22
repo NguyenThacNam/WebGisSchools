@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="layout/admin">
+<head>
+<meta charset="UTF-8">
+<title>Danh sách địa điểm</title>
+<style type="text/css">
+.alert {
+	padding: 15px;
+	margin-bottom: 20px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+}
+
+.alert-success {
+	color: #3c763d;
+	background-color: #dff0d8;
+	border-color: #d6e9c6;
+}
+
+.alert-danger {
+	color: #a94442;
+	background-color: #f2dede;
+	border-color: #ebccd1;
+}
+</style>
+</head>
+<body>
+	<div layout:fragment="main">
+
+		<div th:if="${successMessage}" class="alert alert-success">
+			<span th:text="${successMessage}"></span>
+		</div>
+		<h1>Danh sách địa điểm</h1>
+
+		<!-- Form tìm kiếm -->
+		<form action="/admin/location/search" method="get" class="form-inline">
+			<div class="form-group">
+				<input class="form-control" name="keyword"
+					placeholder="Nhập tên danh mục" th:value="${param.keyword}">
+			</div>
+			<button type="submit" class="btn btn-primary">
+				<i class="fa fa-search"></i> Tìm kiếm
+			</button>
+
+			<!-- Nút Thêm mới -->
+			<a th:href="@{/admin/location/create}"
+				class="btn btn-success pull-right"> <i class="fa fa-plus"></i>
+				Thêm mới
+			</a>
+		</form>
+
+		<!-- Bảng hiển thị danh mục -->
+		<div class="table-responsive">
+			<table class="table table-primary table-bordered">
+				<thead>
+					<tr>
+
+						<th>Tên</th>
+						<th>Địa chỉ</th>
+						<th>Latitude</th>
+						<th>Longitude</th>
+						<th>Loại</th>
+						<th>Giờ mở</th>
+						<th>Ảnh</th>
+						<th>Thao tác</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="model : ${data}">
+
+						<td th:text="${model.name}"></td>
+						<td th:text="${model.address}"></td>
+						<td th:text="${model.latitude}"></td>
+						<td th:text="${model.longitude}"></td>
+						<td th:text="${model.category}"></td>
+						<td th:text="${model.openingHours}"></td>
+						<td><img th:src="${model.imageUrl}"
+							style="height: 50px; width: 80px" alt="Ảnh địa điểm"></td>
+
+
+						<td><a th:href="@{'/admin/location/edit/' + ${model.id} }"
+							class="btn btn-sm btn-primary" style="margin-bottom: 5px;">Sửa</a>
+
+							<a th:href="@{'/admin/location/delete/' + ${model.id} }"
+							class="btn btn-sm btn-danger"
+							onclick="return confirm('Bạn có chắc chắn muốn xóa địa điểm này?');">Xóa</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<nav aria-label="Page navigation">
+				<th:block th:if="${totalPages > 0}">
+					<ul class="pagination d-flex justify-content-center">
+						<li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+							th:classappend="${i} == ${currentPage} ? 'active'"><a
+							class="page-link" th:href="@{'/admin/location?page=' + ${i}}"
+							th:text="${i + 1}">1</a></li>
+					</ul>
+				</th:block>
+
+
+			</nav>
+		</div>
+
+	</div>
+</body>
+</html>
